@@ -1,9 +1,19 @@
-# Output VPC ID
+#  VPC ID
 output "vpc_id" {
-  value = aws_vpc.nss25.id
+  value = aws_vpc.main.id
 }
 
-# Output Subnet ID
-output "subnet_id" {
-  value = aws_subnet.public.id
+#  Public Subnet IDs
+output "public_subnet_ids" {
+  value = aws_subnet.public[*].id
+}
+
+#  Private App Subnet IDs
+output "private_app_subnet_ids" {
+  value = aws_subnet.private_app[*].id
+}
+
+#  Private DB Subnet IDs
+output "private_db_subnet_ids" {
+  value = aws_subnet.private_db[*].id
 }

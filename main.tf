@@ -1,9 +1,9 @@
-# Create Networking Module
+# Networking Module
 module "networking" {
   source = "./modules/networking"
 }
 
-# Create Security Module
+# Security Module 
 module "security" {
   source = "./modules/security"
   vpc_id = module.networking.vpc_id
@@ -11,12 +11,32 @@ module "security" {
   depends_on = [module.networking]
 }
 
-# Create Compute Module
-module "compute" {
-  source            = "./modules/compute"
-  subnet_id         = module.networking.subnet_id
-  security_group_id = module.security.security_group_id
+# ALB Module
+module "alb" {
+  source            = "./modules/alb"
+  vpc_id            = module.networking.vpc_id
+  public_subnet_ids = module.networking.public_subnet_ids
+  security_group_id = module.security.web_sg_id
 
-  depends_on = [module.security, module.networking]
+  depends_on = [module.networking, module.security]
 }
 
+# Compute Module
+module "compute" {
+  source             = "./modules/compute"
+  private_subnet_ids = module.networking.private_app_subnet_ids
+  security_group_id  = module.security.app_sg_id
+  target_group_arn   = module.alb.target_group_arn
+
+  depends_on = [module.security, module.networking, module.alb]
+}
+
+# DB Module
+module "database" {
+  source                = "./modules/database"
+  vpc_id                = module.networking.vpc_id
+  private_db_subnet_ids = module.networking.private_db_subnet_ids
+  security_group_id     = module.security.db_sg_id
+
+  depends_on = [module.networking, module.security]
+}

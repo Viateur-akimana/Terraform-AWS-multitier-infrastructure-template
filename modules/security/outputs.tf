@@ -1,4 +1,11 @@
-# Output Security Group ID
-output "security_group_id" {
-  value = aws_security_group.allow_http_ssh.id
+output "web_sg_id" {
+  value = aws_security_group.web_sg.id
+}
+
+output "app_sg_id" {
+  value = aws_security_group.app_sg.id
+}
+
+output "db_sg_id" {
+  value = aws_security_group.db_sg.id
 }

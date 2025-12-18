@@ -1,55 +1,93 @@
 # Create VPC
-resource "aws_vpc" "nss25" {
-  cidr_block = var.vpc_cidr
-
-  enable_dns_hostnames = "true"
-  enable_dns_support   = "true"
-  tags = {
-    Name = "nss25_vpc"
-  }
-}
-
-# Create Public Subnet
-resource "aws_subnet" "public" {
-  vpc_id            = aws_vpc.nss25.id
-  cidr_block        = var.public_subnet_cidr
-  availability_zone = var.availability_zone
-  map_public_ip_on_launch = true
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
 
   tags = {
-    Name = "public_subnet"
-  }
-}
-
-# Create Private Subnet
-resource "aws_subnet" "private" {
-  vpc_id            = aws_vpc.nss25.id
-  cidr_block        = var.private_subnet_cidr
-  availability_zone = var.availability_zone
-
-  tags = {
-    Name = "private_subnet"
+    Name        = "${var.project_name}-vpc"
+    Environment = var.environment
   }
 }
 
 # Create Internet Gateway
 resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.nss25.id
+  vpc_id = aws_vpc.main.id
 
   tags = {
-    Name = "nss25"
+    Name        = "${var.project_name}-igw"
+    Environment = var.environment
   }
 }
 
-# # Attach Internet Gateway to VPC - not needed as vpc_id is specified in aws_internet_gateway
-# resource "aws_internet_gateway_attachment" "example" {
-#   internet_gateway_id = aws_internet_gateway.igw.id
-#   vpc_id              = aws_vpc.nss25.id
-# }
+# Create 2 Public Subnets
+resource "aws_subnet" "public" {
+  count                   = length(var.public_subnet_cidrs)
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  availability_zone       = var.availability_zones[count.index]
+  map_public_ip_on_launch = true
 
-# Create Public Route Table
-resource "aws_route_table" "nss25_public" {
-  vpc_id = aws_vpc.nss25.id
+  tags = {
+    Name        = "${var.project_name}-public-subnet-${count.index + 1}"
+    Tier        = "Public"
+    Environment = var.environment
+  }
+}
+
+# Create 2 Private App Subnets
+resource "aws_subnet" "private_app" {
+  count             = length(var.private_app_subnet_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_app_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index]
+
+  tags = {
+    Name        = "${var.project_name}-private-app-subnet-${count.index + 1}"
+    Tier        = "App"
+    Environment = var.environment
+  }
+}
+
+# Create 2 Private DB Subnets
+resource "aws_subnet" "private_db" {
+  count             = length(var.private_db_subnet_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private_db_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index]
+
+  tags = {
+    Name        = "${var.project_name}-private-db-subnet-${count.index + 1}"
+    Tier        = "DB"
+    Environment = var.environment
+  }
+}
+
+# Create EIP for NAT Gateway
+resource "aws_eip" "nat" {
+  domain = "vpc"
+  tags = {
+    Name        = "${var.project_name}-nat-eip"
+    Environment = var.environment
+  }
+}
+
+# Create NAT Gateway
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public[0].id
+
+  tags = {
+    Name        = "${var.project_name}-nat-gw"
+    Environment = var.environment
+  }
+
+  depends_on = [aws_internet_gateway.igw]
+}
+
+# Public Route Table
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
 
   route {
     cidr_block = "0.0.0.0/0"
@@ -57,12 +95,36 @@ resource "aws_route_table" "nss25_public" {
   }
 
   tags = {
-    Name = "nss25_public_rtb"
+    Name        = "${var.project_name}-public-rt"
+    Environment = var.environment
   }
 }
 
-# Associate Public Subnet with Public Route Table
+# Private Route Table (for App subnets)
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+
+  tags = {
+    Name        = "${var.project_name}-private-rt"
+    Environment = var.environment
+  }
+}
+
+# Route Table Associations for Public Subnets
 resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.nss25_public.id
+  count          = length(var.public_subnet_cidrs)
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+# Route Table Associations for Private App Subnets
+resource "aws_route_table_association" "private_app" {
+  count          = length(var.private_app_subnet_cidrs)
+  subnet_id      = aws_subnet.private_app[count.index].id
+  route_table_id = aws_route_table.private.id
 }
