@@ -24,3 +24,8 @@ variable "project_name" {
   type        = string
   default     = "3tier-iac"
 }
+
+variable "owner" {
+  description = "Owner of the resources"
+  type        = string
+}

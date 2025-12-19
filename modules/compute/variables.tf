@@ -9,8 +9,18 @@ variable "private_subnet_ids" {
   type        = list(string)
 }
 
+variable "public_subnet_id" {
+  description = "Public subnet ID for the Bastion"
+  type        = string
+}
+
 variable "security_group_id" {
   description = "Security Group ID for the app servers"
+  type        = string
+}
+
+variable "bastion_security_group_id" {
+  description = "Security Group ID for the Bastion"
   type        = string
 }
 
@@ -29,6 +39,11 @@ variable "project_name" {
   description = "Project name"
   type        = string
   default     = "3tier-iac"
+}
+
+variable "owner" {
+  description = "Owner of the resources"
+  type        = string
 }
 
 variable "key_name" {

@@ -12,9 +12,10 @@ resource "aws_launch_template" "app" {
     tags = {
       Name        = "${var.project_name}-app-instance"
       Environment = var.environment
+      Owner       = var.owner
     }
   }
-# Bootstrap scripts
+  # Bootstrap scripts
   user_data = base64encode(<<-EOF
               #!/bin/bash
               apt-get update
@@ -45,5 +46,22 @@ resource "aws_autoscaling_group" "app" {
     key                 = "Name"
     value               = "${var.project_name}-asg"
     propagate_at_launch = true
+  }
+}
+
+# Create Bastion Host
+resource "aws_instance" "bastion" {
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.instance_type
+  key_name                    = var.key_name
+  subnet_id                   = var.public_subnet_id
+  vpc_security_group_ids      = [var.bastion_security_group_id]
+  associate_public_ip_address = true
+
+  tags = {
+    Name        = "${var.project_name}-bastion"
+    Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }

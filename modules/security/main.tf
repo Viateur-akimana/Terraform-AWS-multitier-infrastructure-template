@@ -36,6 +36,7 @@ resource "aws_security_group" "web_sg" {
   tags = {
     Name        = "${var.project_name}-web-sg"
     Environment = var.environment
+    Owner       = var.owner
   }
 }
 
@@ -52,12 +53,12 @@ resource "aws_security_group" "app_sg" {
     security_groups = [aws_security_group.web_sg.id]
   }
 
-  # Allow SSH
+  # Allow SSH from Bastion SG
   ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion_sg.id]
   }
 
   # Allow ICMP from Web SG 
@@ -66,6 +67,14 @@ resource "aws_security_group" "app_sg" {
     to_port         = -1
     protocol        = "icmp"
     security_groups = [aws_security_group.web_sg.id]
+  }
+
+  # Allow ICMP from Bastion SG
+  ingress {
+    from_port       = -1
+    to_port         = -1
+    protocol        = "icmp"
+    security_groups = [aws_security_group.bastion_sg.id]
   }
 
   egress {
@@ -78,17 +87,46 @@ resource "aws_security_group" "app_sg" {
   tags = {
     Name        = "${var.project_name}-app-sg"
     Environment = var.environment
+    Owner       = var.owner
   }
 }
 
-# 3. DB Security Group (RDS)
+# 3. Bastion Security Group
+resource "aws_security_group" "bastion_sg" {
+  name        = "${var.project_name}-bastion-sg"
+  description = "Allow SSH from anywhere"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${var.project_name}-bastion-sg"
+    Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
+  }
+}
+
+# 4. DB Security Group (RDS)
 resource "aws_security_group" "db_sg" {
   name        = "${var.project_name}-db-sg"
   description = "Allow traffic from App SG"
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port       = 3306 
+    from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
     security_groups = [aws_security_group.app_sg.id]
@@ -104,5 +142,7 @@ resource "aws_security_group" "db_sg" {
   tags = {
     Name        = "${var.project_name}-db-sg"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }

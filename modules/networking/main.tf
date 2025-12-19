@@ -7,6 +7,8 @@ resource "aws_vpc" "main" {
   tags = {
     Name        = "${var.project_name}-vpc"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }
 
@@ -17,6 +19,8 @@ resource "aws_internet_gateway" "igw" {
   tags = {
     Name        = "${var.project_name}-igw"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }
 
@@ -32,6 +36,8 @@ resource "aws_subnet" "public" {
     Name        = "${var.project_name}-public-subnet-${count.index + 1}"
     Tier        = "Public"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }
 
@@ -46,6 +52,8 @@ resource "aws_subnet" "private_app" {
     Name        = "${var.project_name}-private-app-subnet-${count.index + 1}"
     Tier        = "App"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }
 
@@ -60,6 +68,8 @@ resource "aws_subnet" "private_db" {
     Name        = "${var.project_name}-private-db-subnet-${count.index + 1}"
     Tier        = "DB"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }
 
@@ -69,6 +79,8 @@ resource "aws_eip" "nat" {
   tags = {
     Name        = "${var.project_name}-nat-eip"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }
 
@@ -80,6 +92,8 @@ resource "aws_nat_gateway" "nat" {
   tags = {
     Name        = "${var.project_name}-nat-gw"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 
   depends_on = [aws_internet_gateway.igw]
@@ -97,6 +111,8 @@ resource "aws_route_table" "public" {
   tags = {
     Name        = "${var.project_name}-public-rt"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }
 
@@ -112,6 +128,8 @@ resource "aws_route_table" "private" {
   tags = {
     Name        = "${var.project_name}-private-rt"
     Environment = var.environment
+    Project     = var.project_name
+    Owner       = var.owner
   }
 }
 

@@ -11,6 +11,7 @@ resource "aws_lb" "main" {
   tags = {
     Name        = "${var.project_name}-alb"
     Environment = var.environment
+    Owner       = var.owner
   }
 }
 
@@ -32,6 +33,7 @@ resource "aws_lb_target_group" "main" {
   tags = {
     Name        = "${var.project_name}-tg"
     Environment = var.environment
+    Owner       = var.owner
   }
 }
 

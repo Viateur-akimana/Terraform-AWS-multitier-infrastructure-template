@@ -1,86 +1,110 @@
-# 3-Tier AWS Infrastructure with Terraform
+# 3-Tier AWS Architecture with Terraform
 
-## Project Overview
-This project automates the deployment of a highly available, secure, 3-tier architecture on AWS using Terraform. The architecture is modularized, ensuring reusability and clean separation of concerns between networking, security, compute, and database layers.
+## 1. Project Overview
+This project automates the deployment of a highly available, secure, 3-tier architecture on AWS using Terraform. The architecture is fully modularized, following best practices for reusability and separation of concerns.
 
-## Architecture Layers
-
-### 1. Presentation Layer (Public Tier)
-- **Application Load Balancer (ALB):** Distributed across two public subnets in different Availability Zones (AZs). It acts as the entry point for all HTTP traffic.
-- **Public Subnets:** Hosts the ALB and the NAT Gateway.
-
-### 2. Application Layer (Private Tier)
-- **Auto Scaling Group (ASG):** Automatically manages EC2 instances across two private application subnets.
-- **Private App Subnets:** These subnets have no direct internet access. Outbound traffic is routed through a NAT Gateway for security.
-- **Apache Web Server:** Installed via bootstrap scripts (User Data) to serve content.
-
-### 3. Data Layer (Private Tier)
-- **RDS MySQL Database:** A managed database instance residing in the private database subnets.
-- **Private DB Subnets:** Isolated subnets with no internet access, accessible only from the application tier on port 3306.
+### Architecture Layers:
+1.  **Presentation Layer (Public Tier):**
+    *   **Application Load Balancer (ALB):** Distributed across 2 Public Subnets in different AZs.
+    *   **Bastion Host:** A jump server in the public subnet for secure administration.
+2.  **Application Layer (Private Tier):**
+    *   **Auto Scaling Group (ASG):** Automatically manages EC2 instances across 2 Private App Subnets.
+    *   **Apache Web Server:** Provisioned via User Data script.
+3.  **Data Layer (Private Tier):**
+    *   **RDS MySQL:** A managed database instance in 2 Private DB Subnets, accessible only from the application tier.
 
 ---
 
-## Project Structure
+## 2. Project Structure
 ```text
 3tier-project/
 ├── main.tf                 # Root configuration (calls all modules)
-├── provider.tf             # AWS provider and Terraform version
-├── outputs.tf              # High-level outputs (ALB DNS, DB Endpoint)
+├── variables.tf            # Root variables
+├── outputs.tf              # Root outputs (ALB DNS, RDS endpoint, etc.)
+├── provider.tf             # AWS provider configuration
+├── terraform.tfvars        # User-defined variable values
 ├── modules/
 │   ├── networking/         # VPC, Subnets, IGW, NAT GW, Route Tables
 │   ├── security/           # Tier-specific Security Groups
-│   ├── alb/                # Application Load Balancer, Listeners, Target Groups
-│   ├── compute/            # Launch Templates, Auto Scaling Group
+│   ├── alb/                # ALB, Listeners, Target Groups
+│   ├── compute/            # Launch Templates, ASG, Bastion Host
 │   └── database/           # RDS instances and Subnet Groups
 ```
 
 ---
 
-## Implementation Details
+## 3. Module Descriptions
 
-### Networking
-- **VPC CIDR:** 10.0.0.0/16
-- **Multi-AZ:** Deployment across `eu-west-1a` and `eu-west-1b`.
-- **Subnet breakdown:** 2 Public, 2 Private App, 2 Private DB subnets.
-- **NAT Gateway:** Enables private instances to download packages without exposure.
+### Networking Module
+*   Creates a VPC with a specified CIDR block.
+*   Deploys 6 subnets: 2 Public, 2 Private App, 2 Private DB across 2 AZs.
+*   Configures Internet Gateway and NAT Gateway for outbound connectivity.
 
-### Security
-- **Web Security Group:** Allows Port 80, 443, and ICMP from anywhere.
-- **App Security Group:** Allows Port 80 and ICMP only from the Web SG.
-- **DB Security Group:** Allows Port 3306 only from the App SG.
+### Security Module
+*   **Web SG:** Allows HTTP/HTTPS and ICMP from anywhere.
+*   **App SG:** Allows HTTP and ICMP from Web SG; SSH and ICMP from Bastion SG.
+*   **Bastion SG:** Allows SSH from anywhere.
+*   **DB SG:** Allows MySQL (3306) from App SG.
 
-### Compute
-- **Ubuntu 22.04:** AMI fetched dynamically via data sources.
-- **Auto Scaling:** Minimum 2 instances, maximum 4.
-- **Provisioning:** Automated installation of Apache via user_data.
+### ALB Module
+*   Deploys an Application Load Balancer in public subnets.
+*   Configures a Target Group and an HTTP Listener on Port 80.
 
----
+### Compute Module
+*   **Launch Template:** Uses a data source to fetch the latest Ubuntu AMI.
+*   **ASG:** Scales between 2 and 4 instances.
+*   **Bastion Host:** Provides a secure entry point to the private network.
 
-## Deployment Instructions
-
-### Prerequisites
-- AWS CLI configured with appropriate credentials.
-- Terraform (v1.6.0 or later) installed.
-
-### Steps
-1. **Initialize the project:**
-   ```bash
-   terraform init
-   ```
-2. **Review the execution plan:**
-   ```bash
-   terraform plan
-   ```
-3. **Deploy the infrastructure:**
-   ```bash
-   terraform apply
-   ```
-4. **Access the application:**
-   Copy the `alb_dns_name` provided in the outputs and paste it into your browser.
+### Database Module
+*   Deploys an Amazon RDS MySQL instance.
+*   Configures a DB Subnet Group across private DB subnets.
 
 ---
 
-## Tagging Convention
-All resources are tagged for better organization and cost tracking:
-- **Project:** 3tier-iac
-- **Name:** Dynamic based on resource type
+## 4. Deployment Instructions
+
+### Prerequisites:
+*   AWS CLI configured with credentials.
+*   Terraform (v1.6.0+) installed.
+
+### Steps:
+1.  **Initialize:**
+    ```bash
+    terraform init
+    ```
+2.  **Configure Variables:**
+    Edit `terraform.tfvars` with your specific values (Region, AZs, Key Name, etc.).
+3.  **Plan:**
+    ```bash
+    terraform plan
+    ```
+4.  **Apply:**
+    ```bash
+    terraform apply
+    ```
+5.  **Verify:**
+    Access the application using the `alb_dns` output.
+
+---
+
+## 5. Variables and Outputs
+
+### Key Variables:
+*   `region`: The AWS region to deploy to.
+*   `owner`: Tag used for identifying resource ownership.
+*   `db_password`: Secure password for the RDS instance.
+
+### Root Outputs:
+*   `alb_dns`: The DNS name of the Load Balancer.
+*   `rds_endpoint`: The connection string for the database.
+*   `asg_name`: The name of the Auto Scaling Group.
+*   `bastion_public_ip`: Public IP to access the jump server.
+
+---
+
+## 6. Tagging Convention
+All resources are tagged with:
+*   **Project:** 3tier-app
+*   **Environment:** dev
+*   **Owner:** Viateur-akimana
+*   **Name:** Unique name per resource

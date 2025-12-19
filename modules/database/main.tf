@@ -6,6 +6,7 @@ resource "aws_db_subnet_group" "main" {
   tags = {
     Name        = "${var.project_name}-db-subnet-group"
     Environment = var.environment
+    Owner       = var.owner
   }
 }
 
@@ -31,5 +32,6 @@ resource "aws_db_instance" "main" {
   tags = {
     Name        = "${var.project_name}-db"
     Environment = var.environment
+    Owner       = var.owner
   }
 }
