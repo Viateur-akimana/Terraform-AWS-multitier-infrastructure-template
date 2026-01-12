@@ -1,7 +1,6 @@
 variable "instance_type" {
   description = "Type of AWS EC2 instance"
   type        = string
-  default     = "t3.micro"
 }
 
 variable "private_subnet_ids" {
@@ -32,13 +31,11 @@ variable "target_group_arn" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
 }
 
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "3tier-iac"
 }
 
 variable "owner" {
@@ -49,5 +46,4 @@ variable "owner" {
 variable "key_name" {
   description = "SSH key pair name"
   type        = string
-  default     = "test-server-kp"
 }

@@ -3,7 +3,6 @@
 variable "vpc_cidr" {
   description = "CIDR block for the VPC"
   type        = string
-  default     = "10.0.0.0/16"
 }
 
 variable "public_subnet_cidrs" {
@@ -27,19 +26,16 @@ variable "private_db_subnet_cidrs" {
 variable "availability_zones" {
   description = "Availability zones for subnets"
   type        = list(string)
-  default     = ["eu-west-1a", "eu-west-1b"]
 }
 
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
 }
 
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "3tier-iac"
 }
 
 variable "owner" {

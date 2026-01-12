@@ -16,32 +16,28 @@ variable "security_group_id" {
 variable "db_name" {
   description = "Database name"
   type        = string
-  default     = "mydb"
+
 }
 
 variable "db_username" {
   description = "Database username"
   type        = string
-  default     = "admin"
 }
 
 variable "db_password" {
   description = "Database password"
   type        = string
   sensitive   = true
-  default     = "Password123!" # In real world, use Secrets Manager
 }
 
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
 }
 
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "3tier-iac"
 }
 
 variable "owner" {
